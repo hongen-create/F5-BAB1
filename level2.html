@@ -577,7 +577,7 @@
             text-align: left;
             width: 100%;
             box-sizing: border-box;
-            padding: 0 2px;
+            padding: 0;
         }
 
         .reminder-content {
@@ -770,6 +770,25 @@
             background: rgba(244, 67, 54, 0.08);
             border-color: #ff4d4d;
             box-shadow: 0 0 10px rgba(244, 67, 54, 0.2);
+        }
+
+        /* --- LEVEL 2 SUMMARY / RESULTS PAGE ONLY MOBILE SCROLLING & SAFE-AREAS --- */
+        #victory-overlay {
+            overflow-y: auto !important;
+            align-items: flex-start !important; /* Allow flex alignment to start from top on overflow */
+            padding-left: 15px;
+            padding-right: 15px;
+            padding-top: max(20px, env(safe-area-inset-top)) !important;
+            padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+            box-sizing: border-box !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #victory-overlay .modal {
+            margin: auto !important; /* Standard centering when fits, scrolls naturally when overflowed */
+            max-height: none !important; /* Prevent internal dynamic scrolling / vertical compression */
+            overflow-y: visible !important; /* Remove double scrollbar */
+            box-sizing: border-box !important;
         }
     </style>
 </head>
