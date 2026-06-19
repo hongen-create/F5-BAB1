@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Level 2: 远古宫殿历史大冒险</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0a0a0a; 
+            font-family: 'Times New Roman', serif;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none; 
+        }
+        
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #d4c4a8;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            z-index: 10;
+        }
+
+        #progress-ui {
+            position: absolute;
+            top: 50px;
+            left: 20px;
+            color: #d4af37;
+            text-shadow: 1px 1px 2px black;
+            pointer-events: none;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            z-index: 10;
+            font-weight: bold;
+        }
+
+        #hearts-ui {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .overlay {
+            display: none; 
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #161a22, #212836);
+            border: 2px solid #d4af37; 
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.45), inset 0 0 20px rgba(0,0,0,0.85);
+            border-radius: 12px;
+            padding: 20px 25px; /* Compacted height */
+            width: 92%;
+            max-width: 420px;
+            color: #f4e8c1;
+            text-align: center;
+            animation: popup 0.3s ease-out;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        @keyframes popup {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-title {
+            color: #d4af37;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #d4af37;
+            padding-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .modal-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            white-space: pre-wrap;
+        }
+
+        .quiz-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #7a6a57;
+            color: #f4e8c1;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .quiz-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .btn-group { display: flex; gap: 10px; }
+
+        .action-btn {
+            display: block;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #7a6a57;
+            color: #f4e8c1;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            text-decoration: none;
+        }
+
+        .action-btn:hover, .action-btn:active {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        .quiz-feedback {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-top: 15px;
+        }
+        
+        .blood-text { color: #f44336; font-size: 1.5rem; text-shadow: 0 0 10px #f44336; }
+
+        .rank-display {
+            font-size: 1.4rem;
+            color: #fff;
+            text-shadow: 0 0 15px #d4af37;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #5c4033;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            color: #d4af37;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .analysis-box {
+            background: rgba(0,0,0,0.3);
+            border-left: 3px solid #4CAF50;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+
+        .analysis-box strong { color: #f4e8c1; display: block; margin-bottom: 3px; }
+        
+        .whatsapp-btn {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: #d4af37;
+            color: #d4af37;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .whatsapp-btn:hover {
+            background: rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* --- MISSION CONTROL SCREEN STYLING --- */
+        #mission-control-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #070e12 0%, #020305 100%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 35px 20px;
+            box-sizing: border-box;
+            color: #00e5ff;
+            font-family: 'Noto Sans SC', sans-serif;
+            transition: opacity 0.8s ease, visibility 0.8s;
+            cursor: pointer; /* Signal QoL interactivity */
+        }
+
+        #mission-control-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .hologram-panel {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(10, 24, 30, 0.88);
+            border: 2px solid #00e5ff;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.25), inset 0 0 20px rgba(0, 229, 255, 0.15);
+            padding: 25px 20px;
+            box-sizing: border-box;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hologram-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(0, 229, 255, 0.04) 50%, transparent 50%), 
+                        linear-gradient(90deg, rgba(0, 229, 255, 0.04) 50%, transparent 50%);
+            background-size: 4px 4px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to bottom, rgba(0, 229, 255, 0), rgba(0, 229, 255, 0.85), rgba(0, 229, 255, 0));
+            top: 0;
+            left: 0;
+            animation: holoScanMove 4s linear infinite;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        @keyframes holoScanMove {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        .mentor-img-box {
+            width: 130px;
+            height: 130px;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .mentor-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.7));
+            animation: mentorFloating 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes mentorFloating {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+        }
+
+        .holo-header {
+            font-size: 13px;
+            color: #8fa6b0;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            z-index: 5;
+        }
+
+        .holo-name {
+            font-size: 19px;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+            z-index: 5;
+        }
+
+        .holo-content-box {
+            width: 100%;
+            min-height: 150px;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            border-radius: 6px;
+            padding: 16px;
+            box-sizing: border-box;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #e2f6f7;
+            letter-spacing: 1.5px;
+            text-align: left;
+            z-index: 5;
+            white-space: pre-line;
+        }
+
+        .briefing-btn {
+            margin-top: 25px;
+            padding: 12px 45px;
+            background: linear-gradient(135deg, #00e5ff, #0088ff);
+            color: #030506;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 5;
+        }
+
+        .briefing-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Scene 3: Warning Red Flash */
+        .warning-flash {
+            animation: warningSiren 0.5s infinite alternate;
+        }
+
+        @keyframes warningSiren {
+            0% { transform: opacity 0.3s; background: radial-gradient(circle at center, #070e12 0%, #020305 100%); }
+            100% { transform: opacity 0.5s; background: radial-gradient(circle at center, #4d0909 0%, #030504 100%); }
+        }
+
+        .explorer-container {
+            position: absolute;
+            bottom: 15%;
+            left: -50px;
+            width: 60px;
+            height: 90px;
+            animation: walkAcrossFast 1s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .explorer-silhouette {
+            width: 30px;
+            height: 70px;
+            fill: #000000;
+        }
+
+        .torch-glow {
+            position: absolute;
+            top: 15px;
+            right: -10px;
+            width: 35px;
+            height: 35px;
+            background: radial-gradient(circle, rgba(255, 140, 0, 0.95) 0%, rgba(255, 69, 0, 0.4) 50%, rgba(0,0,0,0) 80%);
+            border-radius: 50%;
+            animation: torchFlickerFast 0.1s infinite alternate;
+        }
+
+        @keyframes torchFlickerFast {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            100% { transform: scale(1.1) translate(1px, -1px); opacity: 1; }
+        }
+
+        @keyframes walkAcrossFast {
+            0% { left: -50px; transform: scale(0.9); }
+            100% { left: calc(50% - 30px); transform: scale(1); }
+        }
+
+        .stage2-fog {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30%;
+            background: linear-gradient(180deg, transparent, rgba(14, 22, 17, 0.6));
+            pointer-events: none;
+        }
+
+        /* Gold Glowing Memory Card Animation */
+        @keyframes pulseGlow {
+            0% { transform: scale(0.98); box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); }
+            100% { transform: scale(1.02); box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
+        }
+
+        /* Anti-Copy Paste and Security Warning Styles */
+        .no-copy {
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            pointer-events: none !important;
+        }
+
+        @keyframes cameraShake {
+            0% { transform: translate(0, 0) scale(1); }
+            15% { transform: translate(-4px, 3px); }
+            30% { transform: translate(4px, -3px); }
+            45% { transform: translate(-3px, -2px); }
+            60% { transform: translate(3px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* =========================================================
+           REBUILT EXACT REFERENCE COMPACT MISSION CARD STYLES
+           ========================================================= */
+        #quiz-overlay .overlay {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        #quiz-overlay .modal {
+            background: linear-gradient(180deg, #0b111a 0%, #06090f 100%);
+            border: 1.5px solid #c5a059;
+            box-shadow: 0 0 35px rgba(197, 160, 89, 0.4), inset 0 0 25px rgba(0, 0, 0, 0.95);
+            border-radius: 16px;
+            padding: 16px 16px; /* Optimized 9:16 compact padding */
+            width: 92%;
+            max-width: 375px; 
+            color: #f4e8c1;
+            text-align: center;
+            max-height: 98vh;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Highly compressed mobile rhythm spacing */
+            box-sizing: border-box;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        #quiz-overlay .modal::-webkit-scrollbar {
+            width: 4px;
+        }
+        #quiz-overlay .modal::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #quiz-overlay .modal::-webkit-scrollbar-thumb {
+            background: rgba(197, 160, 89, 0.35);
+            border-radius: 4px;
+        }
+
+        #quiz-overlay .modal-title {
+            color: #ffdf70;
+            font-size: 1.35rem;
+            font-family: 'Times New Roman', serif;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            line-height: 1.35;
+            margin: 0;
+            padding: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+            border-bottom: none;
+            text-align: center;
+        }
+
+        #quiz-overlay .modal-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            margin-bottom: 0px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px; /* Compressed standard inner gap */
+        }
+
+        /* Elegant flourish divider separating title from content */
+        .flourish-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin: -6px 0 0px 0; /* Compressed negative vertical offset */
+            pointer-events: none;
+        }
+
+        /* Horizontal pill layout formula banner matching image */
+        .formula-banner {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.2px solid #c5a059;
+            border-radius: 8px;
+            padding: 8px 12px; /* Ultra-compact vertical padding */
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+            gap: 8px;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+        }
+
+        .formula-label-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            color: #ffdf70;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .formula-text-content {
+            font-size: 0.95rem;
+            color: #ffffff;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Fine golden divider separating layers */
+        .fine-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(197, 160, 89, 0.18);
+            margin: 1px 0; /* Tightened divider space */
+        }
+
+        /* Reminder inline horizontal section layout - Highly Compact */
+        .reminder-section {
+            display: flex;
+            align-items: flex-start;
+            text-align: left;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0 2px;
+        }
+
+        .reminder-content {
+            font-size: 0.72rem; /* Moderately scaled for robust line wrapping */
+            color: #d4c4a8;
+            line-height: 1.2;
+            margin: 0;
+            width: 100%;
+	    white-space: nowrap;
+            text-align: center;
+        }
+
+        .reminder-highlight {
+            color: #ffdf70;
+            font-weight: bold;
+        }
+
+        /* Historical Scroll title alignment, nested group spacing */
+        .scroll-section-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0px;
+            margin-top: -5px;
+            margin-bottom: 0px;
+            align-items: flex-start;
+        }
+
+        .scroll-title-wrapper {
+            text-align:left !important;
+            margin:0 0 4px 0;
+            padding:0;
+            font-size:1rem;
+            color:#ffdf70;
+        }
+
+        /* Custom Parchment with visual corner accents matching design reference */
+        .parchment-scroll {
+            background: linear-gradient(135deg, #ebd8ba 0%, #dfcfa9 100%);
+            border: 1.5px solid #a68042;
+            border-radius: 8px;
+            padding: 12px 12px 8px 12px; /* Optimal balanced padding to clear corners and overlap tag */
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 15px rgba(110, 75, 20, 0.25), 0 4px 12px rgba(0,0,0,0.45);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 38px; /* Balanced mobile-first vertical footprint */
+            margin-top: 10px; /* Safe space margin to hold the overlapping plaque */
+        }
+
+        /* Integrated Historical Scroll plaque design */
+        .parchment-tag {
+            position: absolute;
+            top: -10px;
+            left: 12px;
+            background: linear-gradient(180deg, #c5a059 0%, #8c6a30 100%);
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: bold;
+            font-family: 'Times New Roman', serif;
+            padding: 1px 10px;
+            border-radius: 4px;
+            border: 1.2px solid #ffdf70;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.45);
+            z-index: 10;
+            letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+            white-space: nowrap;
+        }
+
+        /* Inner lining */
+        .parchment-scroll::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px solid rgba(166, 128, 66, 0.35);
+            border-radius: 6px;
+            pointer-events: none;
+        }
+
+        /* Custom double golden parchment corner guides */
+        .parchment-corner {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border: 1px solid rgba(166, 128, 66, 0.75);
+            pointer-events: none;
+        }
+        .corner-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+        .corner-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+        .corner-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+        .corner-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+        .parchment-text {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.05rem;
+            font-weight: bold;
+            line-height: 1.45;
+            color: #3b250e;
+            text-shadow: 0 0.5px 1px rgba(255,255,255,0.45);
+            z-index: 2;
+        }
+
+        /* Input layout wrappers aligned perfectly to grid bounds */
+        .input-section-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px; /* Compressed gap */
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .input-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            color: #ffdf70;
+            font-size: 0.95rem;
+            text-align: left;
+            padding-left: 2px;
+        }
+
+        #quiz-overlay .quiz-input {
+            background: #0f141d;
+            border: 1.5px solid #c5a059;
+            color: #f4e8c1;
+            padding: 10px 12px; /* Compact padding */
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            text-align: left;
+            width: 100%;
+            transition: all 0.2s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        #quiz-overlay .quiz-input::placeholder {
+            color: rgba(244, 232, 193, 0.3);
+        }
+
+        #quiz-overlay .quiz-input:focus {
+            border-color: #ffdf70;
+            box-shadow: 0 0 12px rgba(255, 223, 112, 0.35), inset 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        #quiz-overlay .btn-group {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-top: 2px;
+            box-sizing: border-box;
+        }
+
+        #quiz-overlay .action-btn {
+            display: block;
+            width: 100%;
+            background: #0d121c;
+            border: 1.2px solid #c5a059;
+            color: #ffdf70;
+            padding: 9px; /* Optimized mobile padding */
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        #quiz-overlay .action-btn:hover, #quiz-overlay .action-btn:active {
+            background: rgba(197, 160, 89, 0.15);
+            border-color: #ffdf70;
+            box-shadow: 0 0 10px rgba(255, 223, 112, 0.2);
+        }
+
+        /* Standard Red design button custom style wrapper */
+        #quiz-overlay .cancel-btn {
+            background: #150f11;
+            border-color: #7a2d2d;
+            color: #f44336;
+        }
+
+        #quiz-overlay .cancel-btn:hover, #quiz-overlay .cancel-btn:active {
+            background: rgba(244, 67, 54, 0.08);
+            border-color: #ff4d4d;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-viewport" id="viewport">
+        <!-- 全屏转场金色高能闪光层 -->
+        <div id="flashOverlay"></div>
+
+        <!-- 视觉计时器 / VISUAL TIMER -->
+        <div id="visual-timer" style="display: none; position: absolute; top: 55px; right: 20px; background: rgba(30, 30, 40, 0.8); border: 1px solid #d4af37; border-radius: 12px; padding: 4px 10px; color: #d4af37; font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; z-index: 10; box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); pointer-events: none; letter-spacing: 1px;">⏱ 00:00</div>
+
+        <!-- 开始前的触碰石碑仪式 -->
+        <div id="activationGate" style="display: none;"></div>
+
+        <!-- 第一阶段：时空传送门 -->
+        <div class="stage" id="stage1" style="display: none;"></div>
+
+        <!-- 第二阶段：古庙探险家剪影 -->
+        <div class="stage" id="stage2" style="display: none;"></div>
+
+        <!-- 第三阶段：画卷引入展示 -->
+        <div class="stage" id="stage3" style="display: none;"></div>
+
+        <!-- 新增过渡幕：JACK老师神秘现身 -->
+        <div class="mentor-stage" id="mentorStage" style="display: none;"></div>
+
+        <!-- 新增过渡幕：目标档案数据锁定 -->
+        <div class="terminal-stage" id="terminalStage" style="display: none;"></div>
+
+    </div>
+
+    <!-- 全息战术控制台前置层 -->
+    <div id="mission-control-overlay">
+        <div style="font-size: 11px; color: #8fa6b0; letter-spacing: 4px; text-transform: uppercase;">// 探险战术 system 简报 //</div>
+        
+        <div class="hologram-panel" id="holoPanel">
+            <div class="scan-line"></div>
+            
+            <!-- 第三幕漂浮黑暗灵体元素 -->
+            <div id="ghostAnim" class="floating-ghost" style="display: none;">👻</div>
+
+            <div class="mentor-img-box">
+                <img id="mentorImg" src="JACK1.png" class="mentor-img" alt="JACK" />
+            </div>
+            
+            <div class="holo-header">历史守护者联盟导师</div>
+            <div class="holo-name">万能教·JACK老师</div>
+            
+            <!-- 剧情打字机盒子 -->
+            <div class="holo-content-box" id="holoContent"></div>
+            
+            <!-- 下一步控制按键 -->
+            <button id="btnHoloNext" class="briefing-btn">继续</button>
+        </div>
+
+        <div style="font-size: 9px; color: #4e6370; letter-spacing: 1.5px;">Tactical System Status: Secure_ // LEVEL_02_INTEL</div>
+    </div>
+
+    <div id="ui-layer">探索远古宫殿遗迹</div>
+    <div id="progress-ui">已解除的古老结界: 0 / 5</div>
+    <div id="hearts-ui">❤️❤️❤️</div>
+    
+    <div id="quiz-overlay" class="overlay">
+        <div class="modal">
+            <div class="modal-title">智慧结界</div>
+            <div class="modal-text" id="q-text"></div>
+            <div id="q-options"></div>
+            <div class="quiz-feedback" id="q-feedback"></div>
+        </div>
+    </div>
+
+    <!-- 重新引入并优化后的通关卡片（victory-overlay） -->
+    <div id="victory-overlay" class="overlay">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-title">🌟 远古宫殿挑战完成 🌟</div>
+            
+            <!-- 导师头像 -->
+            <div style="width: 100px; height: 100px; margin: 0 auto 15px auto;">
+                <img src="JACK2.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.7)); animation: mentorFloating 4s ease-in-out infinite alternate;" />
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">挑战得分<span class="stat-value" id="v-points">0 / 25</span></div>
+                <div class="stat-box">清除结界<span class="stat-value" id="v-barriers">0 / 5</span></div>
+                <div class="stat-box">总计得分<span class="stat-value" id="v-score">0 / 25</span></div>
+                <div class="stat-box">通关时间<span class="stat-value" id="v-time">0 秒</span></div>
+            </div>
+
+            <div class="teacher-box" style="background: rgba(139, 101, 8, 0.1); border: 1px dashed #8b6508; border-radius: 8px; padding: 15px; text-align: left; line-height: 1.6; color: #e3cfa8; margin-bottom: 25px;">
+                <div class="teacher-title" style="font-weight: bold; color: #ffdf70; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; font-size: 15px;">👨‍🏫 Jack老师：</div>
+                <p class="teacher-msg" id="teacher-msg" style="font-size: 14px; white-space: pre-line;"></p>
+            </div>
+
+            <!-- 全新的黄金高光跳转按钮，重定向至 assessment.html -->
+            <div style="margin-top: 25px; border-top: 1px solid #5c4033; padding-top: 20px;">
+                <a href="assessment.html" class="action-btn" style="background: linear-gradient(to bottom, #d4af37, #8b6508); border-color: #ffdf70; color: #fff; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 30px; padding: 14px; text-decoration: none;">
+                    🏛️ 开启历史能力评估
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameover-overlay" class="overlay">
+        <div class="modal">
+            <div class="modal-title blood-text">☠️ 探索失败 (Game Over) ☠️</div>
+            <div class="modal-text">你被黑暗灵体吞噬了...<br>(You were consumed by the dark spirits...)</div>
+            <button class="action-btn" onclick="location.reload()">重新开始</button>
+        </div>
+    </div>
+
+    <audio id="bgMusic" loop>
+        <source src="maze-ambient.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="barrierSound">
+        <source src="barrier.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="successSound">
+        <source src="level2-success.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="ghostSound">
+        <source src="ghost.mp3" type="audio/mpeg">
+    </audio>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        /* ==========================================
+           STORAGE FOUNDATION DRIVERS
+           ========================================== */
+        const SESSION_KEY = 'sovereigns_relic_session';
+        let level2StartTime = 0;
+        let barrierScores = { "Q1": 0, "Q2": 0, "Q3": 0, "Q4": 0, "Q5": 0 };
+
+        // QoL Visual Timer Controller
+        let timerInterval;
+        function startVisualTimer() {
+            const timerEl = document.getElementById('visual-timer');
+            if (!timerEl) return;
+            timerEl.style.display = 'block';
+            
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!level2StartTime) return;
+                const elapsed = Math.round((Date.now() - level2StartTime) / 1000);
+                const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const secs = String(elapsed % 60).padStart(2, '0');
+                timerEl.innerText = `⏱ ${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function generateAttemptId() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}${mm}${dd}`;
+                       
+            return `HIS-${dateStr}-${Date.now()}`;
+        }
+
+        function createDefaultSession() {
+            return {
+                attemptId: generateAttemptId(),
+                date: new Date().toISOString(),
+                completedStatus: false,
+                googleSheetUploaded: false,
+                level1Score: 0,
+                level1Time: 0,
+                transitScore: 0,
+                transitTime: 0,
+                level2Score: 0,
+                level2Time: 0,
+                totalTime: 0,
+                q1_q5_answers: [
+                    { "questionId": "Q1", "answer": "" },
+                    { "questionId": "Q2", "answer": "" },
+                    { "questionId": "Q3", "answer": "" },
+                    { "questionId": "Q4", "answer": "" },
+                    { "questionId": "Q5", "answer": "" }
+                ],
+                learningType: '',
+                name: '',
+                phone: '',
+                email: ''
+            };
+        }
+
+        function initializeGameSession() {
+            let session = localStorage.getItem(SESSION_KEY);
+            if (!session) {
+                const defaultSession = createDefaultSession();
+                localStorage.setItem(SESSION_KEY, JSON.stringify(defaultSession));
+                return defaultSession;
+            }
+            return JSON.parse(session);
+        }
+
+        function saveGameSession(sessionData) {
+            localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+        }
+
+        function loadGameSession() {
+            const session = localStorage.getItem(SESSION_KEY);
+            return session ? JSON.parse(session) : initializeGameSession();
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const bgMusic = document.getElementById("bgMusic");
+        const barrierSound = document.getElementById("barrierSound");
+        const successSound = document.getElementById("successSound");
+        const ghostSound = document.getElementById("ghostSound");
+
+        document.addEventListener("click", () => {
+            if (bgMusic.paused) {
+                bgMusic.volume = 0.2;
+                bgMusic.play();
+            }
+        }, { once: true });
+
+        const ctx = canvas.getContext('2d');
+
+        let CAMERA_ZOOM = 1.5;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            CAMERA_ZOOM = window.innerWidth < 600 ? 1.8 : 1.3; 
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let gameState = 'BRIEFING';
+        let fadeAlpha = 0;
+
+        // --- NEW QUESTIONS & TARGET RETYPE SENTENCES PATCH ---
+        const barrierData = {
+            "3-3": {
+                id: "Q1",
+                title: "Ciri Negara Bangsa Kerajaan Alam Melayu",
+                formula: "地盘有国王，法律管人民",
+                instruction: "记得跟着大字母、小字母重新打出来一次。",
+                target: "Ciri pertama ialah wilayah pengaruh"
+            },
+            "7-5": {
+                id: "Q2",
+                title: "Ciri Negara Bangsa Kerajaan Alam Melayu",
+                formula: "地盘有国王，法律管人民",
+                instruction: "记得跟着大字母、小字母重新打出来一次。",
+                target: "Wilayah pengaruh ialah kawasan yang rakyatnya menerima pemerintahan raja"
+            },
+            "9-9": {
+                id: "Q3",
+                title: "Ciri Negara Bangsa Kerajaan Alam Melayu",
+                formula: "地盘有国王，法律管人民",
+                instruction: "记得跟着大字母、小字母重新打出来一次。",
+                target: "Ciri Kedua ialah raja. Raja dibantu oleh pembesar."
+            },
+            "3-15": {
+                id: "Q4",
+                title: "Ciri Negara Bangsa Kerajaan Alam Melayu",
+                formula: "地盘有国王，法律管人民",
+                instruction: "记得跟着大字母、小字母重新打出来一次。",
+                target: "Ciri ketiga ialah undang-undang. Undang-undang mewujudkan kesejahteraan kerajaan. Undang-undang menjadi panduan pentadbiran."
+            },
+            "11-15": {
+                id: "Q5",
+                title: "Ciri Negara Bangsa Kerajaan Alam Melayu",
+                formula: "地盘有国王，法律管人民",
+                instruction: "记得跟着大字母、小字母重新打出来一次。",
+                target: "Ciri Keempat ialah rakyat. Rakyat merupakan penduduk di sesebuah wilayah. Rakyat taat setia kepada raja."
+            }
+        };
+
+        const TOTAL_BARRIERS = Object.keys(barrierData).length;
+        let totalPointsPossible = 25; // Retype scoring points maximum
+
+        const gameStats = {
+            pointsIdentified: 0,
+            barriersCleared: 0,
+            timesHit: 0,
+            totalPossiblePoints: totalPointsPossible
+        };
+
+        const mapLayout = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1], 
+            [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 2, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 2, 1, 0, 1], 
+            [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 2, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1], 
+            [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 0, 0, 1, 2, 0, 0, 1, 0, 0, 0, 0, 0, 1], 
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1], 
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 1], 
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1], 
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 
+            [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1], 
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ];
+
+        const TILE_SIZE = 80; 
+
+        const player = {
+            x: TILE_SIZE * 1.5,      
+            y: TILE_SIZE * 1.5,      
+            visualX: TILE_SIZE * 1.5,
+            visualY: TILE_SIZE * 1.5,
+            angle: 0,                
+            targetAngle: 0,          
+            size: 30,           
+            speed: 4,           
+            targetX: TILE_SIZE * 1.5,
+            targetY: TILE_SIZE * 1.5,
+            isMoving: false,
+            hp: 3,
+            checkpoint: { x: TILE_SIZE * 1.5, y: TILE_SIZE * 1.5 },
+            isInvulnerable: false
+        };
+
+        const enemies = [
+            { x: TILE_SIZE * 6.5, y: TILE_SIZE * 1.5, size: 28, vx: 2, vy: 0 }, 
+            { x: TILE_SIZE * 15.5, y: TILE_SIZE * 5.5, size: 28, vx: 0, vy: 2 }, 
+            { x: TILE_SIZE * 7.5, y: TILE_SIZE * 9.5, size: 28, vx: -2, vy: 0 }, 
+            { x: TILE_SIZE * 4.5, y: TILE_SIZE * 13.5, size: 28, vx: 2, vy: 0 }  
+        ];
+
+        let camera = { x: 0, y: 0 };
+        let redFlashFrames = 0;
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (gameState !== 'PLAYING') return; 
+            
+            const rect = canvas.getBoundingClientRect();
+            const tapX = (e.clientX - rect.left) / CAMERA_ZOOM;
+            const tapY = (e.clientY - rect.top) / CAMERA_ZOOM;
+
+            player.targetX = tapX + camera.x;
+            player.targetY = tapY + camera.y;
+            player.isMoving = true;
+        });
+
+        function checkCollision(x, y, entitySize) {
+            const EPSILON = 0.5; 
+            const left = x - entitySize / 2 + EPSILON;
+            const right = x + entitySize / 2 - EPSILON;
+            const top = y - entitySize / 2 + EPSILON;
+            const bottom = y + entitySize / 2 - EPSILON;
+
+            const startCol = Math.floor(left / TILE_SIZE);
+            const endCol = Math.floor(right / TILE_SIZE);
+            const startRow = Math.floor(top / TILE_SIZE);
+            const endRow = Math.floor(bottom / TILE_SIZE);
+
+            for (let row = startRow; row <= endRow; row++) {
+                for (let col = startCol; col <= endCol; col++) {
+                    if (row >= 0 && row < mapLayout.length && col >= 0 && col < mapLayout[0].length) {
+                        const tile = mapLayout[row][col];
+                        if (tile === 1) return { hit: true, type: 'wall' };
+                        if (tile === 2) return { hit: true, type: 'barrier', row, col };
+                    } else {
+                        return { hit: true, type: 'wall' }; 
+                    }
+                }
+            }
+            return { hit: false };
+        }
+
+        function takeDamage() {
+            if (player.isInvulnerable || gameState !== 'PLAYING') return;
+            ghostSound.currentTime = 0;
+            ghostSound.play();
+
+            player.hp--;
+            gameStats.timesHit++; 
+            updateHeartsUI();
+            
+            if (player.hp <= 0) {
+                gameState = 'GAMEOVER';
+                document.getElementById('gameover-overlay').style.display = 'flex';
+            } else {
+                redFlashFrames = 15;
+                player.x = player.checkpoint.x;
+                player.y = player.checkpoint.y;
+                player.visualX = player.x;
+                player.visualY = player.y;
+                player.targetX = player.x;
+                player.targetY = player.y;
+                player.isMoving = false;
+                
+                player.isInvulnerable = true;
+                setTimeout(() => { player.isInvulnerable = false; }, 1500);
+            }
+        }
+
+        function updateHeartsUI() {
+            let hearts = "";
+            for(let i=0; i<3; i++) hearts += i < player.hp ? "❤️" : "🖤";
+            document.getElementById('hearts-ui').innerText = hearts;
+        }
+
+        /* ==========================================
+           QoL: LEVENSHTEIN RETYPE SIMILARITY SYSTEM
+           ========================================== */
+        function getSimilarityScore(s1, s2) {
+            s1 = s1.trim();
+            s2 = s2.trim();
+            const m = s1.length;
+            const n = s2.length;
+            if (m === 0 && n === 0) return 100;
+            if (m === 0 || n === 0) return 0;
+
+            const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+            for (let i = 0; i <= m; i++) dp[i][0] = i;
+            for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (s1[i - 1] === s2[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1];
+                    } else {
+                        dp[i][j] = Math.min(
+                            dp[i - 1][j] + 1,    // deletion
+                            dp[i][j - 1] + 1,    // insertion
+                            dp[i - 1][j - 1] + 1 // substitution
+                        );
+                    }
+                }
+            }
+
+            const maxLen = Math.max(m, n);
+            const distance = dp[m][n];
+            return Math.round((1 - distance / maxLen) * 100);
+        }
+
+        function mapSimilarityToScore(percentage) {
+            if (percentage >= 90) return 5;
+            if (percentage >= 70) return 4;
+            if (percentage >= 50) return 3;
+            if (percentage >= 30) return 2;
+            if (percentage >= 10) return 1;
+            return 0;
+        }
+
+        function triggerQuiz(row, col) {
+            if (gameState === 'QUIZ') return;
+            
+            gameState = 'QUIZ';
+            barrierSound.currentTime = 0;
+            barrierSound.play();
+
+            player.isMoving = false; 
+            
+            const data = barrierData[`${row}-${col}`];
+            if(!data) { unlockBarrier(row, col); return; }
+
+            document.getElementById('quiz-overlay').style.display = 'flex';
+            document.querySelector('#quiz-overlay .modal-title').innerText = data.title; // Question Title
+
+            // Elegant center line flourish from reference image
+            const flourishDividerHTML = `
+                <div class="flourish-divider">
+                    <svg width="100%" height="16" viewBox="0 0 320 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 8H130" stroke="url(#line-grad-left)" stroke-width="1"/>
+                        <path d="M190 8H310" stroke="url(#line-grad-right)" stroke-width="1"/>
+                        <path d="M160 3L164 8L160 13L156 8Z" fill="#c5a059"/>
+                        <path d="M142 8C147 4 153 4 155 8C153 12 147 12 142 8Z" fill="#c5a059" opacity="0.6"/>
+                        <path d="M178 8C173 4 167 4 165 8C167 12 173 12 178 8Z" fill="#c5a059" opacity="0.6"/>
+                        <defs>
+                            <linearGradient id="line-grad-left" x1="10" y1="8" x2="130" y2="8" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#c5a059" stop-opacity="0"/>
+                                <stop offset="1" stop-color="#c5a059" stop-opacity="0.5"/>
+                            </linearGradient>
+                            <linearGradient id="line-grad-right" x1="190" y1="8" x2="310" y2="8" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#c5a059" stop-opacity="0.5"/>
+                                <stop offset="1" stop-color="#c5a059" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+            `;
+
+            // A. Compact Horizontal Premium Magic Formula Banner matching design reference image (Removed Emojis)
+            const formulaBannerHTML = `
+                <div class="formula-banner">
+                    <div class="formula-label-wrapper">
+                        万能口诀
+                    </div>
+                    <div class="formula-text-content">地盘有国王，法律管人民</div>
+                </div>
+            `;
+
+            // Fine Divider Line
+            const fineDividerHTML = `<div class="fine-divider"></div>`;
+
+            // B. Instruction (⚠️ removed) - FIXED STRUCTURAL ALIGNMENT WITH NO EMOJIS
+            const reminderHTML = `
+                <div class="reminder-section">
+                    <div class="reminder-content">
+                        <span class="reminder-highlight">提示：</span>记得跟着大字母，小字母重新打出来一次。
+                    </div>
+                </div>
+            `;
+
+            // C. Unified Historical Scroll Component with attached plaque
+            const targetSentenceHTML = `
+                <div class="parchment-scroll no-copy">
+                    <div class="parchment-tag">历史卷轴</div>
+                    <div class="parchment-corner corner-tl"></div>
+                    <div class="parchment-corner corner-tr"></div>
+                    <div class="parchment-corner corner-bl"></div>
+                    <div class="parchment-corner corner-br"></div>
+                    <span class="parchment-text">${data.target}</span>
+                </div>
+            `;
+
+            // Inject restructured dynamic nodes
+            document.getElementById('q-text').innerHTML = `
+                ${flourishDividerHTML}
+                ${formulaBannerHTML}
+                ${fineDividerHTML}
+                ${reminderHTML}
+                ${fineDividerHTML}
+                ${targetSentenceHTML}
+            `;
+            
+            document.getElementById('q-feedback').innerHTML = ""; 
+            
+            // D. Input Section Layout & Bottom Controls Grid mirroring image reference exactly (Removed Emojis)
+            const optsContainer = document.getElementById('q-options');
+            optsContainer.innerHTML = `
+                <div class="input-section-wrapper">
+                    <div class="input-header">
+                        请重新输入历史句子
+                    </div>
+                    <input type="text" id="q-input" class="quiz-input" placeholder="请输入句子（不可粘贴）..." autocomplete="off">
+                    <div class="btn-group" id="q-btn-group">
+                        <button class="action-btn" id="q-submit">提交答案</button>
+                        <button class="action-btn cancel-btn" id="q-cancel">离开</button>
+                    </div>
+                </div>
+            `;
+            
+            const inputField = document.getElementById('q-input');
+            const submitBtn = document.getElementById('q-submit');
+            const cancelBtn = document.getElementById('q-cancel');
+            const btnGroup = document.getElementById('q-btn-group');
+
+            // Block Paste completely inside input with QoL feedback
+            inputField.addEventListener('paste', (e) => {
+                e.preventDefault();
+                showPasteWarning();
+            });
+            inputField.addEventListener('drop', (e) => e.preventDefault());
+            inputField.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+                    e.preventDefault();
+                    showPasteWarning();
+                }
+            });
+            inputField.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            function showPasteWarning() {
+                const feedback = document.getElementById('q-feedback');
+                feedback.innerHTML = `<div style="color: #f44336; font-size: 0.9rem; margin-top: 8px; font-weight: bold; text-align: center; animation: cameraShake 0.3s ease;">❌ 本关卡为记忆默写训练，禁止复制粘贴，请手动输入！</div>`;
+                setTimeout(() => {
+                    const warnMsg = feedback.querySelector('div');
+                    if (warnMsg) warnMsg.style.display = 'none';
+                }, 3000);
+            }
+
+            const checkAnswer = () => {
+                const inputVal = inputField.value.trim();
+                if(!inputVal) return; 
+
+                const similarity = getSimilarityScore(inputVal, data.target);
+                const scoreAwarded = mapSimilarityToScore(similarity);
+
+                barrierScores[data.id] = scoreAwarded;
+                
+                // Store answer in session
+                let session = loadGameSession();
+                if (!session.q1_q5_answers) {
+                    session.q1_q5_answers = [
+                        { "questionId": "Q1", "answer": "" },
+                        { "questionId": "Q2", "answer": "" },
+                        { "questionId": "Q3", "answer": "" },
+                        { "questionId": "Q4", "answer": "" },
+                        { "questionId": "Q5", "answer": "" }
+                    ];
+                }
+                const qObj = session.q1_q5_answers.find(item => item.questionId === data.id);
+                if (qObj) {
+                    qObj.answer = inputVal;
+                    saveGameSession(session);
+                }
+
+                inputField.style.display = 'none';
+                btnGroup.style.display = 'none';
+                // Hide label
+                const label = optsContainer.querySelector('.input-header');
+                if (label) label.parentElement.style.display = 'none';
+
+                const feedback = document.getElementById('q-feedback');
+
+                gameStats.pointsIdentified += scoreAwarded; 
+                gameStats.barriersCleared++;
+
+                let feedbackHTML = `<div style="text-align: left; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid #7a6a57;">`;
+                feedbackHTML += `<span style="color: #4CAF50; font-weight: bold;">✔ 比对校验完成:</span><br>`;
+                feedbackHTML += `<span style="color: #ffffff; margin-left: 10px; font-size: 0.95rem;">文本匹配度: <strong style="color: #d4af37;">${similarity}%</strong></span><br>`;
+                feedbackHTML += `<span style="color: #ffffff; margin-left: 10px; font-size: 0.95rem;">挑战积分: <strong style="color: #d4af37;">${scoreAwarded} / 5 分</strong></span><br><br>`;
+                feedbackHTML += `<span style="color: #4CAF50; font-style: italic;">智慧结界正在解除...</span></div>`;
+
+                // Add skip option to review or continue
+                feedbackHTML += `
+                    <button class="action-btn" id="btn-quiz-continue" style="margin-top: 15px; background: linear-gradient(to bottom, #d4af37, #8b6508); border: 2px solid #ffdf70; color: #fff; font-weight: bold; box-shadow: 0 4px 10px rgba(212,175,55,0.3);">
+                        🔍 继续探索
+                    </button>
+                `;
+
+                feedback.innerHTML = feedbackHTML;
+                player.checkpoint = { x: player.x, y: player.y };
+
+                document.getElementById('btn-quiz-continue').onclick = () => {
+                    playButtonClick();
+                    unlockBarrier(row, col);
+                };
+            };
+
+            submitBtn.onclick = checkAnswer;
+            inputField.onkeypress = (e) => { if (e.key === 'Enter') checkAnswer(); };
+
+            cancelBtn.onclick = () => {
+                document.getElementById('quiz-overlay').style.display = 'none';
+                gameState = 'PLAYING';
+                player.targetX = player.x;
+                player.targetY = player.y;
+            };
+
+            setTimeout(() => inputField.focus(), 100);
+        }
+
+       
+        function unlockBarrier(row, col) {
+            successSound.currentTime = 0;
+            successSound.play();
+
+            mapLayout[row][col] = 0; 
+            document.getElementById('quiz-overlay').style.display = 'none';
+            
+            document.getElementById('progress-ui').innerText = `已解除的古老结界: ${gameStats.barriersCleared} / ${TOTAL_BARRIERS}`;
+
+            if (gameStats.barriersCleared >= TOTAL_BARRIERS) {
+                gameState = 'VICTORY_TRANSITION'; 
+                setTimeout(triggerVictory, 1500);
+            } else {
+                gameState = 'PLAYING';
+            }
+        }
+
+        // --- 变动：通关结算流程，装填数据、生成动态 Jack 老师评语并显化模态总结层 ---
+        function triggerVictory() {
+            if (timerInterval) clearInterval(timerInterval); // Stop visual timer representation
+            gameState = 'VICTORY';
+            player.isMoving = false;
+
+            const elapsedSeconds = Math.round((Date.now() - level2StartTime) / 1000);
+            const level2TotalScore = Object.values(barrierScores).reduce((a, b) => a + b, 0);
+            
+            let session = loadGameSession();
+            session.level2Score = level2TotalScore;
+            session.level2Time = elapsedSeconds;
+            session.totalTime = (session.level1Time || 0) + (session.transitTime || 0) + elapsedSeconds;
+            session.completedStatus = true;
+            saveGameSession(session);
+
+            console.log("Level 2 Completion: Final results saved.");
+
+            let commentText = "";
+            if (level2TotalScore >= 17) {
+                commentText = "恭喜你完成远古宫殿挑战！你展现出了极其卓越的历史分析能力，对要点的把握精准无误！\n\n在进入最终学习报告之前，请先完成一个简单的历史能力评估。这将帮助我们更了解你的学习特点与优势。";
+            } else if (level2TotalScore >= 11) {
+                commentText = "恭喜你完成远古宫殿挑战！你对核心事实的掌握相当扎实，表现很不错！\n\n在进入最终学习报告之前，请先完成一个简单的历史能力评估。这将帮助我们更了解你的学习特点与优势。";
+            } else {
+                commentText = "恭喜你完成远古宫殿挑战！虽然遇到了一些困难，但你依然选择坚守并完成了探索，这非常值得赞赏！\n\n在进入最终学习报告之前，请先完成一个简单的历史能力评估。这将帮助我们更了解你的学习特点与优势。";
+            }
+
+            // 装填动态数据与评语
+            document.getElementById('v-points').innerText = `${level2TotalScore} / 25`;
+            document.getElementById('v-barriers').innerText = `${gameStats.barriersCleared} / ${TOTAL_BARRIERS}`;
+            document.getElementById('v-score').innerText = `${level2TotalScore} / 25`;
+            document.getElementById('teacher-msg').innerText = commentText;
+            
+            // 自动换算时间
+            if (elapsedSeconds >= 60) {
+                const mins = Math.floor(elapsedSeconds / 60);
+                const secs = elapsedSeconds % 60;
+                document.getElementById('v-time').innerText = `${mins} 分 ${secs} 秒`;
+            } else {
+                document.getElementById('v-time').innerText = `${elapsedSeconds} 秒`;
+            }
+
+            document.getElementById('victory-overlay').style.display = 'flex';
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            if (player.isMoving) {
+                const dx = player.targetX - player.x;
+                const dy = player.targetY - player.y;
+                const distance = Math.hypot(dx, dy);
+
+                if (distance < player.speed) {
+                    player.x = player.targetX;
+                    player.y = player.targetY;
+                    player.isMoving = false;
+                } else {
+                    const moveX = (dx / distance) * player.speed;
+                    const moveY = (dy / distance) * player.speed;
+
+                    player.targetAngle = Math.atan2(dy, dx);
+
+                    player.x += moveX;
+                    let colX = checkCollision(player.x, player.y, player.size);
+                    if (colX.hit) {
+                        player.x -= moveX; 
+                        if (colX.type === 'barrier') triggerQuiz(colX.row, colX.col);
+                    }
+
+                    player.y += moveY;
+                    let colY = checkCollision(player.x, player.y, player.size);
+                    if (colY.hit) {
+                        player.y -= moveY; 
+                        if (colY.type === 'barrier') triggerQuiz(colY.row, colY.col);
+                    }
+                }
+            }
+
+            let diff = player.targetAngle - player.angle;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff)); 
+            player.angle += diff * 0.2;
+
+            player.visualX += (player.x - player.visualX) * 0.4;
+            player.visualY += (player.y - player.visualY) * 0.4;
+
+            enemies.forEach(e => {
+                e.x += e.vx;
+                e.y += e.vy;
+                
+                if (checkCollision(e.x, e.y, e.size).hit) {
+                    e.x -= e.vx; e.y -= e.vy;
+                    e.vx = -e.vx; e.vy = -e.vy;
+                }
+
+                if (Math.hypot(player.x - e.x, player.y - e.y) < (player.size/2 + e.size/2)) {
+                    takeDamage();
+                }
+            });
+
+            camera.x = player.visualX - (canvas.width / 2) / CAMERA_ZOOM;
+            camera.y = player.visualY - (canvas.height / 2) / CAMERA_ZOOM;
+        }
+
+        function drawWall(x, y, size, row, col) {
+            ctx.fillStyle = '#2d3336';
+            ctx.fillRect(x, y, size, size);
+            ctx.strokeStyle = '#1a1d1f';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, size, size);
+        }
+
+        function drawFloor(x, y, size, row, col) {
+            ctx.fillStyle = '#b09e86';
+            ctx.fillRect(x, y, size, size);
+            ctx.strokeStyle = '#8f7e69';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(x + 2, y + 2, size - 4, size - 4);
+        }
+
+        function drawMagicBarrier(x, y, size) {
+            drawFloor(x, y, size, 0, 0);
+            const pulse = (Math.sin(Date.now() / 300) + 1) / 2; 
+            ctx.fillStyle = `rgba(0, 200, 255, ${0.2 + pulse * 0.2})`;
+            ctx.fillRect(x, y, size, size);
+            ctx.strokeStyle = `rgba(0, 255, 255, ${0.6 + pulse * 0.4})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, size * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawEnemy(x, y, size, angle) {
+            ctx.save();
+            const time = Date.now();
+            const floatOffset = Math.sin(time / 200) * 4;
+            const pulse = (Math.sin(time / 150) + 1) / 2; 
+
+            ctx.translate(x, y);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(0, size/2, size/1.5, size/3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.translate(0, floatOffset);
+            ctx.rotate(angle);
+
+            ctx.shadowColor = '#8a2be2'; 
+            ctx.shadowBlur = 15 + pulse * 10;
+            
+            const tailWobble = Math.sin(time / 80) * (size / 3);
+            ctx.fillStyle = '#1a0b2e'; 
+            ctx.beginPath();
+            ctx.moveTo(size/4, 0); 
+            ctx.quadraticCurveTo(-size/2, size/2 + tailWobble, -size, 0); 
+            ctx.quadraticCurveTo(-size/2, -size/2 + tailWobble, size/4, 0); 
+            ctx.fill();
+
+            ctx.fillStyle = '#2d1445';
+            ctx.beginPath();
+            ctx.arc(size/6, 0, size/2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#00ffff'; 
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 10;
+            
+            ctx.beginPath();
+            ctx.ellipse(size/4, -size/6, size/10, size/15, Math.PI/8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(size/4, size/6, size/10, size/15, -Math.PI/8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawExplorer(x, y, size, angle, isMoving) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.beginPath();
+            ctx.ellipse(0, size/4, size/1.8, size/2.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            let wobble = 0;
+            let handSwing = 0;
+            if (isMoving) {
+                wobble = Math.sin(Date.now() / 60) * 0.15;
+                handSwing = Math.sin(Date.now() / 80) * (size / 4);
+            }
+            
+            ctx.rotate(angle + wobble);
+
+            ctx.fillStyle = '#5c4033';
+            ctx.beginPath();
+            ctx.ellipse(-size/3, 0, size/4, size/2.2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#3e2a21';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#2E7D32';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size/2.2, size/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffcda2';
+            ctx.beginPath();
+            ctx.arc(size/6 + handSwing, -size/1.8, size/6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(size/6 - handSwing, size/1.8, size/6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(size/5, 0, size/3, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#d4c4a8';
+            ctx.beginPath();
+            ctx.ellipse(size/6, 0, size/2.2, size/2.5, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle = '#8f7e69';
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.ellipse(size/6, 0, size/3.2, size/3.2, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.strokeStyle = '#5c4033';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(size/6, 0, size/3.2, -Math.PI/2, Math.PI/2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function draw() {
+            if (gameState === 'VICTORY') {
+                ctx.fillStyle = 'rgb(212, 175, 55)'; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.scale(CAMERA_ZOOM, CAMERA_ZOOM);
+            ctx.translate(-camera.x, -camera.y);
+
+            for (let row = 0; row < mapLayout.length; row++) {
+                for (let col = 0; col < mapLayout[row].length; col++) {
+                    const x = col * TILE_SIZE;
+                    const y = row * TILE_SIZE;
+                    const tile = mapLayout[row][col];
+                    if (tile === 1) drawWall(x, y, TILE_SIZE, row, col);
+                    else if (tile === 2) drawMagicBarrier(x, y, TILE_SIZE);
+                    else drawFloor(x, y, TILE_SIZE, row, col);
+                }
+            }
+
+            enemies.forEach(e => {
+                const angle = Math.atan2(e.vy, e.vx);
+                drawEnemy(e.x, e.y, e.size, angle);
+            });
+
+            if (player.isMoving && gameState === 'PLAYING') {
+                const dist = Math.hypot(player.targetX - player.x, player.targetY - player.y);
+                if (dist > 10) {
+                    ctx.beginPath();
+                    ctx.arc(player.targetX, player.targetY, 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 220, 100, 0.5)'; 
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+
+            if (!player.isInvulnerable || Math.floor(Date.now() / 100) % 2 === 0) {
+                drawExplorer(player.visualX, player.visualY, player.size, player.angle, player.isMoving);
+            }
+
+            ctx.restore();
+
+            if (redFlashFrames > 0) {
+                ctx.fillStyle = `rgba(255, 0, 0, ${redFlashFrames / 30})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                redFlashFrames--;
+            }
+
+            if (gameState === 'VICTORY_TRANSITION') {
+                fadeAlpha += 0.02;
+                if (fadeAlpha > 1) fadeAlpha = 1;
+                ctx.fillStyle = `rgba(212, 175, 55, ${fadeAlpha})`; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+
+        /* ==========================================
+           战术简报 system 实现 (Hologram System)
+           ========================================== */
+        let currentBriefingScene = 1;
+        let typingTimer = null;
+        let mcAudioCtx = null;
+
+        // 全局一次性激活 Audio Context 并关联原有 BGM
+        function initMCAudio() {
+            if (mcAudioCtx) return;
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            mcAudioCtx = new AudioContextClass();
+            console.log("Mission Control: Web Audio API context safely unlocked");
+        }
+
+        document.addEventListener('pointerdown', () => {
+            initMCAudio();
+            if (bgMusic.paused) {
+                bgMusic.volume = 0.2;
+                bgMusic.play().catch(() => {});
+            }
+        }, { once: true });
+
+        // 音效合成公共底层
+        function playMCSynth(freqs, type, duration, vol, delayBetween = 0) {
+            try {
+                if (!mcAudioCtx || mcAudioCtx.state === 'suspended') return;
+                const now = mcAudioCtx.currentTime;
+                freqs.forEach((freq, idx) => {
+                    const osc = mcAudioCtx.createOscillator();
+                    const g = mcAudioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, now + idx * delayBetween);
+                    
+                    const start = now + idx * delayBetween;
+                    g.gain.setValueAtTime(0, start);
+                    g.gain.linearRampToValueAtTime(vol, start + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+                    
+                    osc.connect(g);
+                    g.connect(mcAudioCtx.destination);
+                    osc.start(start);
+                    osc.stop(start + duration + 0.05);
+                });
+            } catch(e) {}
+        }
+
+        function playScanSound() {
+            try {
+                if (!mcAudioCtx || mcAudioCtx.state === 'suspended') return;
+                const now = mcAudioCtx.currentTime;
+                const osc = mcAudioCtx.createOscillator();
+                const g = mcAudioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.8);
+                
+                g.gain.setValueAtTime(0, now);
+                g.gain.linearRampToValueAtTime(0.08, now + 0.1);
+                g.gain.linearRampToValueAtTime(0, now + 0.8);
+                
+                osc.connect(g);
+                g.connect(mcAudioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            } catch(e) {}
+        }
+
+        function playTypewriterTick() {
+            try {
+                if (!mcAudioCtx || mcAudioCtx.state === 'suspended') return;
+                const osc = mcAudioCtx.createOscillator();
+                const g = mcAudioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1800 + Math.random() * 400, mcAudioCtx.currentTime);
+                g.gain.setValueAtTime(0.003, mcAudioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, mcAudioCtx.currentTime + 0.015);
+                osc.connect(g);
+                g.connect(mcAudioCtx.destination);
+                osc.start();
+                osc.stop(mcAudioCtx.currentTime + 0.02);
+            } catch(e) {}
+        }
+
+        function playWarningAlert() {
+            try {
+                if (!mcAudioCtx || mcAudioCtx.state === 'suspended') return;
+                const now = mcAudioCtx.currentTime;
+                for (let i = 0; i < 2; i++) {
+                    const osc = mcAudioCtx.createOscillator();
+                    const g = mcAudioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    const startTime = now + i * 0.35;
+                    osc.frequency.setValueAtTime(i % 2 === 0 ? 300 : 220, startTime);
+                    
+                    g.gain.setValueAtTime(0, startTime);
+                    g.gain.linearRampToValueAtTime(0.06, startTime + 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.3);
+                    
+                    osc.connect(g);
+                    g.connect(mcAudioCtx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.35);
+                }
+            } catch(e) {}
+        }
+
+        function playSuccessChime() {
+            playMCSynth([392.00, 493.88, 587.33, 783.99], 'sine', 0.6, 0.08, 0.08);
+        }
+
+        function playButtonClick() {
+            playMCSynth([600, 1200], 'sine', 0.15, 0.05, 0.03);
+        }
+
+        // 简报核心引擎
+        function initMissionBriefing() {
+            console.log("Mission Briefing: Initializing sequence...");
+            gameState = 'BRIEFING';
+            runScene1();
+        }
+
+        /* ==========================================
+           QoL: DIALOGUE ACCELERATION SYSTEM
+           ========================================== */
+        let holoState = {
+            element: null,
+            text: "",
+            charIndex: 0,
+            isTyping: false,
+            isWaiting: false,
+            onDone: null,
+            typingTimeout: null,
+            waitingTimeout: null
+        };
+
+        function runHoloTypewriter(text, speed, callback) {
+            console.log("Holo Typewriter: Typing new text block...");
+            if (typingTimer) clearTimeout(typingTimer);
+            if (holoState.typingTimeout) clearTimeout(holoState.typingTimeout);
+            if (holoState.waitingTimeout) clearTimeout(holoState.waitingTimeout);
+            
+            const container = document.getElementById('holoContent');
+            container.innerHTML = "";
+            
+            holoState.element = container;
+            holoState.text = text;
+            holoState.charIndex = 0;
+            holoState.isTyping = true;
+            holoState.isWaiting = false;
+            holoState.onDone = callback;
+            
+            function type() {
+                if (holoState.charIndex < holoState.text.length) {
+                    const char = holoState.text.charAt(holoState.charIndex);
+                    if (char === '\n') {
+                        container.innerHTML += "<br>";
+                    } else {
+                        container.innerHTML += char;
+                    }
+                    holoState.charIndex++;
+                    playTypewriterTick();
+                    holoState.typingTimeout = setTimeout(type, speed);
+                } else {
+                    finishHoloTypewriter();
+                }
+            }
+            type();
+        }
+
+        function finishHoloTypewriter() {
+            holoState.isTyping = false;
+            holoState.isWaiting = true;
+            if (holoState.typingTimeout) clearTimeout(holoState.typingTimeout);
+            
+            // Output entire text instantly
+            const formatted = holoState.text.replace(/\n/g, "<br>");
+            holoState.element.innerHTML = formatted;
+            
+            if (holoState.onDone) {
+                holoState.onDone();
+            }
+        }
+
+        // Handle Scene 1 skippability
+        let scene1Active = false;
+        let scene1Timeout = null;
+        let scene1TypeTimeout = null;
+        
+        function runScene1() {
+            console.log("Mission Briefing: Loading Scene 1 (Temple Scan)");
+            scene1Active = true;
+            const nextBtn = document.getElementById('btnHoloNext');
+            const content = document.getElementById('holoContent');
+            nextBtn.style.display = 'none'; 
+            
+            let lines = [
+                "扫描远古宫殿中...",
+                "发现未知遗迹结构...",
+                "发现古老结界 ×5",
+                "发现黑暗灵体 ×4",
+                "任务分析完成"
+            ];
+            
+            let currentLineIdx = 0;
+            content.innerHTML = "";
+            
+            function revealNextLine() {
+                if (!scene1Active) return;
+                if (currentLineIdx < lines.length) {
+                    playScanSound();
+                    
+                    const lineDiv = document.createElement('div');
+                    lineDiv.style.textShadow = '0 0 6px #00e5ff';
+                    lineDiv.style.marginBottom = '8px';
+                    content.appendChild(lineDiv);
+                    
+                    let charIdx = 0;
+                    let text = lines[currentLineIdx];
+                    
+                    function typeChar() {
+                        if (!scene1Active) return;
+                        if (charIdx < text.length) {
+                            lineDiv.innerHTML += text.charAt(charIdx);
+                            charIdx++;
+                            playTypewriterTick();
+                            scene1TypeTimeout = setTimeout(typeChar, 35);
+                        } else {
+                            currentLineIdx++;
+                            scene1Timeout = setTimeout(revealNextLine, 500);
+                        }
+                    }
+                    typeChar();
+                } else {
+                    finishScene1();
+                }
+            }
+            revealNextLine();
+        }
+
+        function finishScene1() {
+            if (!scene1Active) return;
+            scene1Active = false;
+            if (scene1Timeout) clearTimeout(scene1Timeout);
+            if (scene1TypeTimeout) clearTimeout(scene1TypeTimeout);
+            
+            const nextBtn = document.getElementById('btnHoloNext');
+            const content = document.getElementById('holoContent');
+            
+            content.innerHTML = `
+                <div style="text-shadow: 0 0 6px #00e5ff; margin-bottom: 8px;">扫描远古宫殿中...</div>
+                <div style="text-shadow: 0 0 6px #00e5ff; margin-bottom: 8px;">发现未知遗迹结构...</div>
+                <div style="text-shadow: 0 0 6px #00e5ff; margin-bottom: 8px;">发现古老结界 ×5</div>
+                <div style="text-shadow: 0 0 6px #00e5ff; margin-bottom: 8px;">发现黑暗灵体 ×4</div>
+                <div style="text-shadow: 0 0 6px #00e5ff; margin-bottom: 8px;">任务分析完成</div>
+            `;
+            nextBtn.style.display = 'block';
+            playSuccessChime();
+        }
+
+        function skipHoloDialogue() {
+            if (scene1Active) {
+                finishScene1();
+            } else if (holoState.isTyping) {
+                finishHoloTypewriter();
+            } else {
+                const btnHoloNext = document.getElementById('btnHoloNext');
+                if (btnHoloNext && btnHoloNext.style.display !== 'none') {
+                    btnHoloNext.click();
+                }
+            }
+        }
+
+        function startLevel2Gameplay() {
+            console.log("Mission Briefing: Cinematic overlay faded. Level 2 clock started.");
+            gameState = 'PLAYING';
+            level2StartTime = Date.now(); // 保证玩家此时此刻点击开局时才初始化关卡倒计时
+            startVisualTimer(); // QoL implementation: start visible timer representation
+            document.getElementById('mission-control-overlay').classList.add('hidden');
+        }
+
+        // 绑定简报步骤切换
+        const nextBtn = document.getElementById('btnHoloNext');
+        nextBtn.addEventListener('click', () => {
+            playButtonClick();
+            currentBriefingScene++;
+            console.log("Mission Briefing: Clicked Next. Navigating to Step " + currentBriefingScene);
+            
+            if (currentBriefingScene === 2) {
+                document.getElementById('mentorImg').src = "JACK3.png";
+                runHoloTypewriter(
+                    "太好了！\n我们已经成功进入远古宫殿。\n\n你的任务是：\n找到并解除5个古老结界。\n每一个结界都封印着重要历史知识。\n只有回答历史问题，才能解除封印。",
+                    22
+                );
+            } else if (currentBriefingScene === 3) {
+                document.getElementById('mentorImg').src = "JACK4.png";
+                document.getElementById('mission-control-overlay').classList.add('warning-flash');
+                document.getElementById('ghostAnim').style.display = 'block';
+                playWarningAlert();
+                
+                runHoloTypewriter(
+                    "⚠ 危险警告\n侦测到黑暗灵体活动中！\n\n千万不要碰到黑暗灵体。\n每被攻击一次：\n❤️ -1\n你只有：\n❤️❤️❤️\n三条生命值。",
+                    22
+                );
+            } else if (currentBriefingScene === 4) {
+                document.getElementById('mentorImg').src = "JACK2.png";
+                document.getElementById('mission-control-overlay').classList.remove('warning-flash');
+                document.getElementById('ghostAnim').style.display = 'none';
+                playSuccessChime();
+                
+                runHoloTypewriter(
+                    "任务目标：\n✅ 找到5个结界\n✅ 回答历史问题\n✅ 避开黑暗灵体\n✅ 成功解除全部封印\n\n图例指南：\n🔵 古老结界  👻 黑暗灵体  🧑 探险家",
+                    22
+                );
+            } else if (currentBriefingScene === 5) {
+                document.getElementById('mentorImg').src = "JACK5.png";
+                nextBtn.innerText = "🚪 开始探索";
+                
+                runHoloTypewriter(
+                    "历史探险家，\n遗迹大门已经开启。\n\n准备好迎接挑战了吗？\n祝你好运！",
+                    22
+                );
+            } else if (currentBriefingScene === 6) {
+                startLevel2Gameplay();
+            }
+        });
+
+
+        /* ==========================================
+           LAUNCH PROCESS
+           ========================================== */
+        // 1. 初始化会话
+        initializeGameSession();
+
+        // 2. 挂载并启动全系任务控制简报
+        initMissionBriefing();
+
+        // 3. 运行主渲染循环
+        requestAnimationFrame(loop);
+
+        // QoL Bind: Attach dialogue skipping clicks directly to entire hologram overlay screen
+        const missionControlOverlay = document.getElementById('mission-control-overlay');
+        if (missionControlOverlay) {
+            missionControlOverlay.addEventListener('click', (e) => {
+                // Prevent trigger conflicts when clicking the actual next scene briefing key
+                if (e.target.id === 'btnHoloNext' || e.target.closest('#btnHoloNext')) {
+                    return;
+                }
+                skipHoloDialogue();
+            });
+        }
+    </script>
+</body>
+</html>
