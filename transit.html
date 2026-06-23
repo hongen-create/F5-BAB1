@@ -360,7 +360,7 @@
             <div>进度: <span id="ui-progress">1/5</span></div>
             <div>分数: <span id="ui-score">0</span></div>
         </div>
-        <!-- 视觉计时器 / VISUAL TIMER (Shifted to top-right of HUD to avoid overlapping) -->
+        <!-- 视觉计时器 / VISUAL TIMER -->
         <div id="visual-timer" style="display: none; position: absolute; top: 10px; right: 15px; background: rgba(17, 21, 28, 0.85); border: 1px solid var(--cyan-glow); border-radius: 12px; padding: 4px 10px; color: var(--cyan-glow); font-family: 'Cinzel', serif, monospace; font-size: 13px; font-weight: bold; box-shadow: 0 0 8px var(--cyan-glow); pointer-events: none; letter-spacing: 1px;">⏱ 00:00</div>
     </div>
 
@@ -457,6 +457,22 @@
     const SESSION_KEY = 'sovereigns_relic_session';
     let transitStartTime = 0;
 
+    // --- CINEMATIC SKIP STATE & TIMEOUT MANAGEMENT ---
+    let cinematicSkipped = false;
+    let dialogueStarted = false;
+    let cinematicTimeouts = [];
+
+    function addCinematicTimeout(fn, delay) {
+        const id = setTimeout(fn, delay);
+        cinematicTimeouts.push(id);
+        return id;
+    }
+
+    function clearCinematicTimeouts() {
+        cinematicTimeouts.forEach(clearTimeout);
+        cinematicTimeouts = [];
+    }
+
     function generateAttemptId() {
         const now = new Date();
         const yyyy = now.getFullYear();
@@ -478,8 +494,8 @@
             level1TimeDisplay: "",
             transitScore: 0,
             transitTime: 0,
-            transitTimeSeconds: 0,  // 新增：本关原始秒数
-            transitTimeDisplay: "", // 新增：本关 "X分Y秒" 格式化时间
+            transitTimeSeconds: 0,
+            transitTimeDisplay: "",
             level2Score: 0,
             level2Time: 0,
             totalTime: 0,
@@ -522,32 +538,32 @@
         return newSession;
     }
 
-    // --- EDUCATIONAL CONTENT DATA (Reduced to exactly 5 questions) ---
+    // --- EDUCATIONAL CONTENT DATA ---
     const questions = [
         {
             q: "Apakah ciri-ciri kedaulatan tradisional?<br><br>I Wujud sejak tamadun awal manusia<br>II Pemerintahan berkuasa mutlak<br>III Dikaitkan dengan hak rakyat and kerajaan<br>IV Mengamalkan sistem Demokrasi Berparlimen",
             options: ["A. I dan II", "B. I dan IV", "C. II dan III", "D. III dan IV"],
-            correct: 0 // A
+            correct: 0
         },
         {
             q: "Kedaulatan undang-undang mewujudkan keamanan, kestabilan, dan kemakmuran di negara kita.<br>Mengapakah halnya demikian?",
             options: ["A. Tidak meminda perlembagaan", "B. Merujuk Hukum Kanun Melaka", "C. Melaksanakan undang-undang moden", "D. Wujudnya badan kehakiman yang bebas"],
-            correct: 3 // D
+            correct: 3
         },
         {
             q: "Apakah matlamat utama usaha kerajaan tersebut?",
             options: ["A. Memajukan bidang ekonomi", "B. Memupuk perpaduan rakyat", "C. Menyekat kedatangan imigran", "D. Menyalurkan bantuan kewangan"],
-            correct: 1 // B
+            correct: 1
         },
         {
             q: "Apakah kuasa yang terlibat dalam melaksanakan dasar pentadbiran negara?<br><br>I Badan Berkanun<br>II Jemaah Menteri<br>III Kementerian berkaitan<br>IV Pihak berkuasa tempatan",
             options: ["A. I dan II", "B. I dan IV", "C. II dan III", "D. III dan IV"],
-            correct: 2 // C
+            correct: 2
         },
         {
             q: "Kedaulatan memberikan hak kepada Malaysia untuk menggubal dasar luar tanpa pengaruh mana-mana pihak.<br>Apakah kepentingan negara menggubal dasar luar?<br><br>I Menjalin persahabatan<br>II Mewujudkan kerjasama<br>III Memperkasa angkatan pertahanan<br>IV Mengukuhkan kedudukan kerajaan",
             options: ["A. I dan II", "B. I dan IV", "C. II dan III", "D. III dan IV"],
-            correct: 0 // A
+            correct: 0
         }
     ];
 
@@ -591,8 +607,8 @@
 
     // --- SYSTEM LOGIC ---
     function init() {
-        transitStartTime = Date.now(); // Record start timestamp of Transit Level
-        startVisualTimer(); // Launch visual timer representation
+        transitStartTime = Date.now();
+        startVisualTimer();
         spawnParticles();
         startWalkingPhase();
     }
@@ -617,7 +633,6 @@
     }
 
     function startWalkingPhase() {
-        // Darken environment slightly as player goes deeper (re-scaled for 5 steps)
         const depthDarkness = 0.9 - (currentIndex * 0.1);
         corridorWalls.style.backgroundImage = `
             linear-gradient(90deg, rgba(0,0,0,${depthDarkness}) 0%, transparent 20%, transparent 80%, rgba(0,0,0,${depthDarkness}) 100%),
@@ -626,7 +641,6 @@
         spawnArchway();
         walkingInterval = setInterval(spawnArchway, 1200);
 
-        // Walk for a few seconds, then encounter a trial
         setTimeout(() => {
             clearInterval(walkingInterval);
             triggerTrial();
@@ -647,7 +661,6 @@
         qText.innerHTML = currentQ.q;
         qOptions.innerHTML = '';
 
-        // Hide answer dismiss button on starting a trial
         const continueBtn = document.getElementById('quiz-continue-btn');
         if (continueBtn) continueBtn.style.display = 'none';
 
@@ -663,38 +676,27 @@
     }
 
     function selectAnswer(selectedIndex, correctIndex, btnElement) {
-
         if (isAnswering) return;
-
         isAnswering = true;
 
         const allBtns = qOptions.querySelectorAll('.option-btn');
 
         if (selectedIndex === correctIndex) {
-
             btnElement.classList.add('correct');
-
             clickSound.currentTime = 0;
             clickSound.play();
-
             totalCorrect++;
-            totalScore += 1; // Updated step score (worth 1 each for a maximum score of 5)
-
+            totalScore += 1;
         } else {
-
             btnElement.classList.add('wrong');
-
             wrongSound.currentTime = 0;
             wrongSound.play();
-
             allBtns[correctIndex].classList.add('correct');
-
             totalWrong++;
         }
 
         uiScore.innerText = totalScore;
 
-        // QoL Implementation: Show continue button instead of automatic panel closure
         const continueBtn = document.getElementById('quiz-continue-btn');
         if (continueBtn) {
             continueBtn.style.display = 'block';
@@ -712,7 +714,6 @@
                 }, 600);
             };
         } else {
-            // Safety timeout fallback
             setTimeout(() => {
                 quizLayer.classList.remove('active');
                 currentIndex++;
@@ -755,12 +756,10 @@
         }, 3500);
     }
 
-    // 变动 1 & 3：更新数据保存，增加格式化时间记录，并自动重定向
     function showSummary() {
-        if (timerInterval) clearInterval(timerInterval); // stop visual timer representation
+        if (timerInterval) clearInterval(timerInterval);
         const summaryLayer = document.getElementById('summary-layer');
 
-        // 计算耗时与双格式保存
         const elapsedSeconds = Math.round((Date.now() - transitStartTime) / 1000);
         
         const minutes = Math.floor(elapsedSeconds / 60);
@@ -769,20 +768,17 @@
 
         let session = loadGameSession();
         session.transitScore = totalCorrect; 
-        session.transitTime = elapsedSeconds;               // 保留原始秒数
-        session.transitTimeSeconds = elapsedSeconds;        // 新增秒数记录
-        session.transitTimeDisplay = timeDisplayStr;        // 新增格式化展现
+        session.transitTime = elapsedSeconds;
+        session.transitTimeSeconds = elapsedSeconds;
+        session.transitTimeDisplay = timeDisplayStr;
         saveGameSession(session);
 
-        // 播放通关音乐
         correctSound.currentTime = 0;
         correctSound.play();
 
-        // 激活结算转场（蓝光过度）
         summaryLayer.style.opacity = '1';
         summaryLayer.style.pointerEvents = 'auto';
 
-        // 2秒后自动重定向
         setTimeout(() => {
             proceedToLevel2();
         }, 2000);
@@ -866,7 +862,6 @@
         introState.element.innerHTML = introState.completedHTML + prefix + curLine;
         introState.completedHTML = introState.element.innerHTML;
 
-        // Auto advance after 400ms if no click skip occurs
         introState.waitingTimeout = setTimeout(() => {
             introState.isWaiting = false;
             startIntroLine(introState.currentLineIdx + 1);
@@ -875,15 +870,12 @@
 
     function skipIntroDialogue() {
         if (introState.isTyping) {
-            // Tap 1: instantly reveal the current sentence
             finishIntroLine();
         } else if (introState.isWaiting) {
-            // Tap 2: move to next sentence immediately
             introState.isWaiting = false;
             if (introState.waitingTimeout) clearTimeout(introState.waitingTimeout);
             startIntroLine(introState.currentLineIdx + 1);
         } else {
-            // Tap 3: Dialogue fully completed, proceed to next sequence
             const btnReady = document.getElementById('btn-intro-ready');
             if (btnReady && btnReady.style.display !== 'none') {
                 btnReady.click();
@@ -895,97 +887,158 @@
        电影级章节过渡时序控制
        ========================================== */
     window.onload = () => {
-        // [完成移除]：不再初始化任何克隆总结卡片，也不等待任何按钮点击，页面加载即刻直接启动史诗章节交替！
         triggerCinematicChapterTransition();
     };
+
+    function startDialogueSequence() {
+        if (dialogueStarted) return;
+        dialogueStarted = true;
+
+        const hudLayer = document.getElementById('cinematic-hud-layer');
+        if (hudLayer) {
+            hudLayer.style.display = 'flex';
+            hudLayer.style.opacity = '1';
+            hudLayer.style.transition = 'none';
+        }
+
+        const mentor = document.getElementById('intro-mentor');
+        if (mentor) {
+            mentor.style.opacity = '1';
+            mentor.style.transform = 'translateY(0)';
+            mentor.style.transition = 'none';
+        }
+
+        const titles = document.getElementById('intro-mentor-titles');
+        if (titles) {
+            titles.style.opacity = '1';
+            titles.style.transition = 'none';
+        }
+
+        playMentorAppearSound();
+
+        const diagBox = document.getElementById('intro-dialogue-box');
+        if (diagBox) {
+            const lines = [
+                "欢迎回来，探险家。",
+                "你已经成功完成寻宝岛挑战。",
+                "接下来，你将进入知识长廊。",
+                "在那里，你需要运用历史知识破解古老试炼。",
+                "每回答正确一道问题，你就会离终点更近一步。"
+            ];
+            runIntroTypewriter(diagBox, lines, 0, () => {
+                const btnReady = document.getElementById('btn-intro-ready');
+                if (btnReady) btnReady.style.display = 'block';
+            });
+        }
+    }
+
+    function jumpToMentorScene() {
+        if (cinematicSkipped) return;
+        cinematicSkipped = true;
+
+        clearCinematicTimeouts();
+
+        // 1. Hide chapter text overlay
+        const textOverlay = document.getElementById('chapter-text-overlay');
+        if (textOverlay) {
+            textOverlay.style.display = 'none';
+        }
+
+        // 2. Hide wooden doors
+        const woodLeft = document.getElementById('wood-left');
+        const woodRight = document.getElementById('wood-right');
+        if (woodLeft) woodLeft.style.display = 'none';
+        if (woodRight) woodRight.style.display = 'none';
+
+        // 3. Force background of wrapper to black
+        const introScreen = document.getElementById('transit-intro-screen');
+        if (introScreen) {
+            introScreen.style.background = '#000000';
+        }
+
+        // 4. Force stone portal container to its final size and state
+        const portal = document.getElementById('stone-portal-container');
+        if (portal) {
+            portal.style.display = 'flex';
+            portal.style.transform = 'scale(1.1)';
+            portal.style.filter = 'blur(0px)';
+            portal.style.opacity = '1';
+            portal.style.transition = 'none';
+        }
+
+        // 5. Play ambient music if not yet playing
+        const audioBg = document.getElementById("bgMusic");
+        if (audioBg && audioBg.paused) {
+            audioBg.volume = 0.25;
+            audioBg.play().catch(() => {});
+        }
+
+        // 6. Instantly launch the dialog systems
+        startDialogueSequence();
+    }
 
     // 章节转场电影时序线
     function triggerCinematicChapterTransition() {
         initWebAudio();
-        // 尝试播放时空转场音乐 (如因浏览器Autoplay政策拦截，会在后续玩家点击“准备好了”时安全恢复)
         playMagicWhooshSound();
         
-        // 场景 2：文字淡入 “第一阶段完成”
         const textOverlay = document.getElementById('chapter-text-overlay');
-        textOverlay.style.display = 'block';
-        setTimeout(() => { textOverlay.style.opacity = '1'; }, 50);
+        if (textOverlay) {
+            textOverlay.style.display = 'block';
+            addCinematicTimeout(() => { textOverlay.style.opacity = '1'; }, 50);
+        }
 
-        // 1.0秒后追加亚标题 “正在开启新的旅程...”
-        setTimeout(() => {
+        addCinematicTimeout(() => {
             const subText = document.getElementById('chapter-step-sub');
-            subText.style.opacity = '1';
+            if (subText) subText.style.opacity = '1';
         }, 1000);
 
-        // 3. 场景 3：寻宝岛远征木门缓缓闭合 (文字渐隐后 2.5s 触发)
-        setTimeout(() => {
-            textOverlay.style.opacity = '0';
+        addCinematicTimeout(() => {
+            if (textOverlay) textOverlay.style.opacity = '0';
             
-            setTimeout(() => {
-                textOverlay.style.display = 'none';
+            addCinematicTimeout(() => {
+                if (textOverlay) textOverlay.style.display = 'none';
                 
-                // 木门闭合动画起步
                 const woodLeft = document.getElementById('wood-left');
                 const woodRight = document.getElementById('wood-right');
-                woodLeft.style.transform = 'translateX(0)';
-                woodRight.style.transform = 'translateX(0)';
+                if (woodLeft && woodRight) {
+                    woodLeft.style.transform = 'translateX(0)';
+                    woodRight.style.transform = 'translateX(0)';
+                }
                 
-                playWoodSlamSound(); // 沉闷古木闭合重音
-                triggerGoldenParticleBurst(); // 伴有寻宝岛金色微光流逸
+                playWoodSlamSound();
+                triggerGoldenParticleBurst();
 
-                // 4. 场景 4：屏幕完全黑暗 (木门完全闭合停留 1.8s 后渐黑)
-                setTimeout(() => {
+                addCinematicTimeout(() => {
                     const introScreen = document.getElementById('transit-intro-screen');
-                    introScreen.style.background = '#000000';
-                    woodLeft.style.opacity = '0';
-                    woodRight.style.opacity = '0';
-                    woodLeft.style.transition = 'opacity 0.8s ease';
-                    woodRight.style.transition = 'opacity 0.8s ease';
+                    if (introScreen) introScreen.style.background = '#000000';
+                    if (woodLeft && woodRight) {
+                        woodLeft.style.opacity = '0';
+                        woodRight.style.opacity = '0';
+                        woodLeft.style.transition = 'opacity 0.8s ease';
+                        woodRight.style.transition = 'opacity 0.8s ease';
+                    }
 
-                    // 5. 场景 5 & 6：黑暗中亮起幽蓝微光，星石传送门推进放大 (1.2s 黑暗停滞后触发)
-                    setTimeout(() => {
-                        // 启动背景原有的环境暗声
-                        if (bgMusic.paused) {
-                            bgMusic.volume = 0.25;
-                            bgMusic.play().catch(() => {});
+                    addCinematicTimeout(() => {
+                        const audioBg = document.getElementById("bgMusic");
+                        if (audioBg && audioBg.paused) {
+                            audioBg.volume = 0.25;
+                            audioBg.play().catch(() => {});
                         }
 
                         const portal = document.getElementById('stone-portal-container');
-                        portal.style.display = 'flex';
-                        playMagicWhooshSound();
+                        if (portal) {
+                            portal.style.display = 'flex';
+                            playMagicWhooshSound();
 
-                        setTimeout(() => {
-                            portal.style.transform = 'scale(1.1)';
-                            portal.style.filter = 'blur(0px)';
-                        }, 50);
+                            addCinematicTimeout(() => {
+                                portal.style.transform = 'scale(1.1)';
+                                portal.style.filter = 'blur(0px)';
+                            }, 50);
+                        }
 
-                        // 6. 场景 7：JACK1.png 浮现于大门下方担任向导，对白打字机启动 (大门推进 3.5s 稳定后)
-                        setTimeout(() => {
-                            const hudLayer = document.getElementById('cinematic-hud-layer');
-                            hudLayer.style.display = 'flex';
-
-                            setTimeout(() => {
-                                document.getElementById('intro-mentor').style.opacity = '1';
-                                document.getElementById('intro-mentor').style.transform = 'translateY(0)';
-                                document.getElementById('intro-mentor-titles').style.opacity = '1';
-                                playMentorAppearSound();
-                            }, 200);
-
-                            setTimeout(() => {
-                                const diagBox = document.getElementById('intro-dialogue-box');
-                                const lines = [
-                                    "欢迎回来，探险家。",
-                                    "你已经成功完成寻宝岛挑战。",
-                                    "接下来，你将进入知识长廊。",
-                                    "在那里，你需要运用历史知识破解古老试炼。",
-                                    "每回答正确一道问题，你就会离终点更近一步。"
-                                ];
-                                runIntroTypewriter(diagBox, lines, 0, () => {
-                                    // 显现准备好了按钮
-                                    const btnReady = document.getElementById('btn-intro-ready');
-                                    btnReady.style.display = 'block';
-                                });
-                            }, 1200);
-
+                        addCinematicTimeout(() => {
+                            startDialogueSequence();
                         }, 3500);
 
                     }, 1200);
@@ -997,58 +1050,66 @@
         }, 2500);
     }
 
-    // 场景 8：准备好了，开启圣石门
     document.getElementById('btn-intro-ready').addEventListener('click', (e) => {
-        e.stopPropagation(); // Avoid triggering any double skips via bubbling
+        e.stopPropagation();
         playMagicWhooshSound();
 
-        // 对白层平滑退场
-        document.getElementById('cinematic-hud-layer').style.opacity = '0';
-        document.getElementById('cinematic-hud-layer').style.transition = 'opacity 0.5s ease';
+        const hudLayer = document.getElementById('cinematic-hud-layer');
+        if (hudLayer) {
+            hudLayer.style.opacity = '0';
+            hudLayer.style.transition = 'opacity 0.5s ease';
+        }
 
-        // 中央法阵爆裂、对开石门旋转敞开
         const seal = document.getElementById('stone-portal-seal');
         const leftStone = document.getElementById('stone-door-left');
         const rightStone = document.getElementById('stone-door-right');
         const openText = document.getElementById('intro-door-open-text');
 
         setTimeout(() => {
-            seal.style.transform = 'scale(2.5)';
-            seal.style.opacity = '0';
-            
+            if (seal) {
+                seal.style.transform = 'scale(2.5)';
+                seal.style.opacity = '0';
+            }
             gateSound.currentTime = 0;
             gateSound.play();
         }, 300);
 
         setTimeout(() => {
-            leftStone.style.transform = 'rotateY(-90deg) translateX(-50px)';
-            leftStone.style.opacity = '0';
-            rightStone.style.transform = 'rotateY(90deg) translateX(50px)';
-            rightStone.style.opacity = '0';
-
-            openText.style.display = 'block';
-            setTimeout(() => { openText.style.opacity = '1'; }, 50);
+            if (leftStone) {
+                leftStone.style.transform = 'rotateY(-90deg) translateX(-50px)';
+                leftStone.style.opacity = '0';
+            }
+            if (rightStone) {
+                rightStone.style.transform = 'rotateY(90deg) translateX(50px)';
+                rightStone.style.opacity = '0';
+            }
+            if (openText) {
+                openText.style.display = 'block';
+                setTimeout(() => { openText.style.opacity = '1'; }, 50);
+            }
         }, 800);
 
-        // 场景 9：相机向前高速移动推入敞开的石门深处，正式 init 游戏世界
         setTimeout(() => {
             const portal = document.getElementById('stone-portal-container');
-            portal.style.transform = 'scale(2.5)';
-            portal.style.transition = 'transform 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            if (portal) {
+                portal.style.transform = 'scale(2.5)';
+                portal.style.transition = 'transform 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            }
 
             const introScreen = document.getElementById('transit-intro-screen');
-            introScreen.style.transition = 'opacity 1.0s ease';
-            introScreen.style.opacity = '0';
+            if (introScreen) {
+                introScreen.style.transition = 'opacity 1.0s ease';
+                introScreen.style.opacity = '0';
+            }
 
             setTimeout(() => {
-                introScreen.style.display = 'none';
-                init(); // 正式启动知识长廊原有机制
+                if (introScreen) introScreen.style.display = 'none';
+                init();
             }, 1000);
 
         }, 2800);
     });
 
-    // 时空微尘物理金粉崩析特效
     function triggerGoldenParticleBurst() {
         for (let i = 0; i < 15; i++) {
             const p = document.createElement('div');
@@ -1197,7 +1258,12 @@ if (transitIntroScreen) {
         if (e.target.id === 'btn-intro-ready' || e.target.closest('#btn-intro-ready')) {
             return;
         }
-        skipIntroDialogue();
+        
+        if (!dialogueStarted) {
+            jumpToMentorScene();
+        } else {
+            skipIntroDialogue();
+        }
     });
 }
 </script>
